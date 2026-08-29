@@ -25,7 +25,7 @@
   --wa-bg:#0B141A; --wa-scr:#E7DED3; --wa-me:#DCF8C6; --wa-them:#FFFFFF;
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:"Plus Jakarta Sans",system-ui,sans-serif;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;transition:background .2s,color .2s}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Plus Jakarta Sans",system-ui,sans-serif;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
 .mono{font-family:"IBM Plex Mono",monospace}
 button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
 input,select{font-family:inherit;font-size:.85rem;color:inherit}
@@ -980,7 +980,10 @@ function reportCenter(){
  return `
  <div class="sect">Report Center</div>
  <p class="muted" style="margin-top:-.4rem;font-size:.85rem">Generate any statement — PDF, Excel or Malayalam — instantly or on a schedule.</p>
- <div class="card pad" style="margin-bottom:1rem;background:var(--accent-bg);border-color:var(--accent-line)"><div style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap"><span class="aibadge"><span class="pulse"></span> Ask in English</span><input id="rcAsk" style="flex:1;min-width:200px;background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:.5rem .7rem;outline:none;font-size:.86rem;color:inherit" placeholder="e.g. 'site-wise P&amp;L for Q2 in Malayalam, PDF'" onkeydown="if(event.key==='Enter')rcGen()"><button class="btn" data-action="rc-ask">Generate</button></div></div>
+ <div class="grid g2" style="margin-bottom:1rem">
+  <div class="card pad" style="background:var(--accent-bg);border-color:var(--accent-line)"><div class="ch" style="padding:0 0 .5rem;border:none"><h3>The fast way — ask in English</h3><span class="aibadge"><span class="pulse"></span> AI</span></div><div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap"><input id="rcAsk" style="flex:1;min-width:170px;background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:.5rem .7rem;outline:none;font-size:.86rem;color:inherit" placeholder="e.g. 'site-wise P&amp;L for Q2 in Malayalam, PDF'" onkeydown="if(event.key==='Enter')rcGen()"><button class="btn" data-action="rc-ask">Generate</button></div></div>
+  <div class="card pad"><div class="ch" style="padding:0 0 .5rem;border:none"><h3>Full control — build it yourself</h3><span class="pill p-gray">manual</span></div><p class="muted" style="font-size:.82rem;margin:0 0 .6rem">Pick the report, the dates, the scope and format by hand — no AI. You drive it.</p><button class="btn" data-action="report-manual">${svg("file",15)} Build a report manually</button></div>
+ </div>
  <div class="grid g2">
   <div>${cats.map(c=>`<div class="card" style="margin-bottom:1rem"><div class="ch"><h3>${c[0]}</h3></div><div class="pad" style="padding-top:.5rem">${c[1].map(r=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:.42rem 0;border-bottom:1px solid var(--line-2)"><span style="font-size:.85rem">${r}</span><div style="display:flex;gap:.35rem"><button class="btn ghost sm" data-action="rc-gen" data-r="${r} (PDF)">PDF</button><button class="btn ghost sm" data-action="rc-gen" data-r="${r} (Excel)">Excel</button><button class="btn ghost sm" data-action="rc-ml">മ</button></div></div>`).join("")}</div></div>`).join("")}</div>
   <div>
@@ -1198,6 +1201,15 @@ function genReport(name){const c=CL(),R=parseL(c.kpi[0][1]),Sp=parseL(c.kpi[3][1
  if(/Balance Sheet/i.test(name)){const f=(re,i)=>{const r=AC().tb.find(x=>re.test(x[0]));return r?'₹'+(r[i]||r[1]||r[2]):'—';};return T(`<th>Particulars</th><th class="tar">Amount</th>`,`<tr style="background:var(--panel-2)"><td colspan="2"><b>Assets</b></td></tr><tr><td>Bank &amp; cash</td><td class="tar num">${c.cash.split(' — ')[0]}</td></tr><tr><td>Receivables (debtors)</td><td class="tar num">${c.kpi[1][1]}</td></tr><tr><td>Stock-in-hand</td><td class="tar num">${f(/Stock/,1)}</td></tr><tr><td>Fixed assets</td><td class="tar num">${f(/Plant|Furniture|Delivery|Equipment|Vehicles/,1)}</td></tr><tr style="background:var(--panel-2)"><td colspan="2"><b>Liabilities &amp; capital</b></td></tr><tr><td>Creditors</td><td class="tar num">${f(/Creditors/,2)}</td></tr><tr><td>Duties &amp; taxes</td><td class="tar num">${f(/Duties/,2)}</td></tr><tr><td>Capital &amp; reserves</td><td class="tar num">${f(/Capital/,2)}</td></tr>`);}
  return `<div style="font-size:.88rem;line-height:1.8">Generated <b>${name}</b> for ${c.nm}, August 2026 — ${c.ent.length} ${c.dim.e.toLowerCase()}s consolidated. Every figure is pulled live from the ledger and drills to its voucher and source bill.</div>`;}
 function rcGen(){openModal(reportModal(val('rcAsk')||'Custom report'));}
+function manualReportModal(){const c=CL();return `<div class="mh"><h3>Build a report — manually</h3><div class="x" onclick="closeModal()">✕</div></div><div class="mb">
+ <p class="muted" style="font-size:.82rem;margin-top:0">Set every parameter yourself. Numio just assembles it from the ledger — no AI involved.</p>
+ <div class="fld"><label>Report</label><select id="mrT">${["Profit & Loss","Balance Sheet","Trial Balance","Cash Flow","Ageing (bill-wise)","GSTR-3B summary","GSTR-2B recon"].map(r=>`<option>${r}</option>`).join("")}</select></div>
+ <div class="grid g2"><div class="fld"><label>From date</label><input id="mrF" type="date" value="2026-08-01"></div><div class="fld"><label>To date</label><input id="mrTo" type="date" value="2026-08-31"></div></div>
+ <div class="fld"><label>Scope</label><select id="mrS"><option>All ${c.dim.e.toLowerCase()}s (consolidated)</option>${c.ent.map(e=>`<option>${e[0]}</option>`).join("")}</select></div>
+ <div class="grid g2"><div class="fld"><label>Group by</label><select id="mrG"><option>${c.dim.e}</option><option>Cost head</option><option>Party</option><option>Month</option></select></div><div class="fld"><label>Format</label><select id="mrFmt"><option>PDF</option><option>Excel</option><option>Malayalam PDF</option></select></div></div>
+ <button class="btn" style="width:100%;justify-content:center;margin-top:.3rem" onclick="manualGen()">Generate report</button>
+ <p class="muted" style="font-size:.73rem;margin-top:.6rem">This is the manual path — you choose everything. The "ask in English" box just does this same thing from one sentence.</p></div>`;}
+function manualGen(){const t=val('mrT'),s=val('mrS'),f=val('mrFmt');closeModal();toast("Generated: "+t+" · "+s+" · "+f);openModal(reportModal(t));}
 function reportModal(name){const c=CL();return `<div class="mh"><h3>${name}</h3><div class="x" onclick="closeModal()">✕</div></div><div class="mb"><div class="pill p-accent" style="margin-bottom:.6rem">✦ Generated instantly · ${c.nm} · Aug 2026</div><div class="card pad" style="max-height:320px;overflow:auto">${genReport(name)}</div><div class="row" style="gap:.5rem;margin-top:.85rem;flex-wrap:wrap"><button class="btn" onclick="toast('Downloaded — ${name} (PDF)')">⬇ Download PDF</button><button class="btn ghost" onclick="toast('Sent on WhatsApp to the owner')">Share on WhatsApp</button><button class="btn ghost" onclick="closeModal();openModal(mlModal())">🌐 മലയാളം</button></div></div>`;}
 function fileModal(ret){const c=CL(),out=(parseL(c.kpi[0][1])*0.18).toFixed(2),itc=(parseL(c.kpi[3][1])*0.12).toFixed(2),net=(parseL(c.kpi[0][1])*0.09).toFixed(2);
  return `<div class="mh"><h3>File ${ret} · Aug 2026</h3><div class="x" onclick="closeModal()">✕</div></div><div class="mb" id="fileBody">
@@ -1469,7 +1481,7 @@ const A={
  "close-lock":()=>{if(PERIODLOCKED){toast("August is already locked");return;}PERIODLOCKED=true;AUDITLOG.unshift({cid:CID,row:["Period · August 2026","Locked","Ajith Sam (Partner)","Just now","open","locked"]});go("close");toast("August closed & locked — audit-safe, no back-dated edits");},
  "rc-gen":(e)=>openModal(reportModal((e.dataset.r||"Report").replace(/ \((PDF|Excel)\)$/,""))),
  "rc-ml":()=>openModal(mlModal()),
- "rc-ask":()=>rcGen(),
+ "rc-ask":()=>rcGen(),"report-manual":()=>openModal(manualReportModal()),
  "rc-schedule":()=>toast("Report pack scheduled"),
  "ret-release":(e)=>toast("Retention released: "+(e.dataset.p||'')),
  "appr-ok":()=>toast("Approved — posted & logged to the audit trail"),

@@ -293,6 +293,7 @@ tbody tr{transition:.1s}tbody tr:hover{background:var(--hover)}
      <div class="nav" data-nav="approvals"><span class="ni" data-ic="check"></span>Approvals</div>
      <div class="nav" data-nav="audit"><span class="ni" data-ic="check"></span>Audit Trail</div>
      <div class="nav" data-nav="close"><span class="ni" data-ic="check"></span>Close &amp; Review</div>
+     <div class="nav" data-nav="exceptions"><span class="ni" data-ic="alert"></span>Exception Center</div>
     </div>
     <div class="ngrp gclick" data-action="toggle-grp" data-g="proj"><span class="gic" data-ic="pin"></span>Projects<span class="gchev" data-ic="chev"></span></div>
     <div class="gitems" id="gitems-proj" style="display:none">
@@ -643,7 +644,7 @@ ageing:()=>ageingScreen(),
 audit:()=>auditScreen(),
 voucher:()=>voucherScreen(),
 reportcenter:()=>reportCenter(),
-retention:()=>retention(),advance:()=>advance(),budget:()=>budget(),wip:()=>wip(),subcon:()=>subcon(),bankrec:()=>bankrec(),masters:()=>masters(),approvals:()=>approvals(),propsales:()=>propsales(),batch:()=>batchScreen(),credit:()=>creditScreen(),drill:()=>drillScreen(),sitedetail:()=>siteDetail(),promo:()=>promo(),movers:()=>movers(),schedh:()=>schedh(),routeplan:()=>routeplan(),salestarget:()=>salestarget(),firmdash:()=>firmdash(),team:()=>team(),close:()=>closeScreen(),
+retention:()=>retention(),advance:()=>advance(),budget:()=>budget(),wip:()=>wip(),subcon:()=>subcon(),bankrec:()=>bankrec(),masters:()=>masters(),approvals:()=>approvals(),propsales:()=>propsales(),batch:()=>batchScreen(),credit:()=>creditScreen(),drill:()=>drillScreen(),sitedetail:()=>siteDetail(),promo:()=>promo(),movers:()=>movers(),schedh:()=>schedh(),routeplan:()=>routeplan(),salestarget:()=>salestarget(),firmdash:()=>firmdash(),team:()=>team(),close:()=>closeScreen(),exceptions:()=>exceptionScreen(),
 };
 
 /* ---------- helpers ---------- */
@@ -878,7 +879,7 @@ function raBill(){
    <div class="ded"><span>Less: Labour welfare cess @ 1%</span><span class="num neg">−₹${cess.toLocaleString('en-IN')}</span></div>
    <div class="ded"><span>Add: GST @ 18% (works contract)</span><span class="num pos">+₹${gst.toLocaleString('en-IN')}</span></div>
    <div class="ded tot"><span>Net payable to contractor</span><span class="num">₹${net.toLocaleString('en-IN')}</span></div>
-   <div class="row" style="margin-top:.8rem;gap:.5rem"><button class="btn" data-action="ra-certify">Certify &amp; post</button><button class="btn ghost" data-action="export">Abstract PDF</button></div></div>
+   <div class="row" style="margin-top:.8rem;gap:.5rem;flex-wrap:wrap"><button class="btn" data-action="ra-certify">Certify &amp; post</button><button class="btn ghost" data-action="ra-journal">See the double-entry</button><button class="btn ghost" data-action="export">Abstract PDF</button></div></div>
   <div class="card pad"><div class="ch" style="padding:0 0 .6rem;border:none"><h3>What posts, and where it's tracked</h3></div>
    <ul style="padding-left:1.05rem;font-size:.84rem;line-height:1.85;margin:0">
     <li><b>Retention ₹${ret.toLocaleString('en-IN')}</b> → Retention register; released 50% at completion + 50% after the defect-liability period.</li>
@@ -1188,7 +1189,7 @@ function postedRows(){return POSTED.filter(p=>p.cid===CID).map(p=>[p.date,p.v,p.
 function auditExtra(){return AUDITLOG.filter(a=>a.cid===CID).map(a=>a.row);}
 function postedModal(v,type,detail){return `<div class="mh"><h3>✓ ${type} posted</h3><div class="x" onclick="closeModal()">✕</div></div><div class="mb">
  <div class="card pad" style="border-color:var(--accent);background:var(--accent-bg);margin-bottom:.8rem"><div style="font-family:'IBM Plex Mono',monospace;font-weight:800;color:var(--accent)">${v}</div><div style="margin-top:.3rem;font-size:.88rem">${detail}</div><div class="faint" style="font-size:.75rem;margin-top:.45rem">Balanced (Dr = Cr) · dimension-tagged · logged to the audit trail</div></div>
- <div class="row" style="gap:.5rem"><button class="btn" onclick="closeModal();go('transactions')">View in Day Book</button><button class="btn ghost" onclick="closeModal();go('audit')">See audit trail</button></div></div>`;}
+ <div class="row" style="gap:.5rem;flex-wrap:wrap"><button class="btn" onclick="openModal(journalFromLastPost())">See the double-entry</button><button class="btn ghost" onclick="closeModal();go('transactions')">Day Book</button><button class="btn ghost" onclick="closeModal();go('audit')">Audit trail</button></div></div>`;}
 function voucherPost(){const c=CL(),V=AC().voucher,v=vNo();POSTED.unshift({cid:CID,kind:'voucher',date:"Today",v,party:V.lines[V.lines.length-1][0].replace(' (Creditor)',''),dim:V.e,head:V.head,amt:parseInt(V.tot.replace(/,/g,''))||0,drcr:'Dr'});AUDITLOG.unshift({cid:CID,row:[v+" · "+V.head,"Created","Al Ameen","Just now","—","₹"+V.tot]});toast("Voucher "+v+" posted");openModal(postedModal(v,VTYPE+" voucher",`${V.head} · ${c.dim.e} ${V.e} · ₹${V.tot}`));}
 function voucherModal(){const c=CL();return `<div class="mh"><h3>New voucher — manual entry</h3><div class="x" onclick="closeModal()">✕</div></div><div class="mb">
  <div class="fld"><label>Voucher type</label><select id="mvT">${["Payment","Receipt","Contra","Journal","Credit Note","Debit Note"].map(t=>`<option ${t===VTYPE?'selected':''}>${t}</option>`).join("")}</select></div>
@@ -1499,8 +1500,57 @@ function siteDetail(){
    <div style="padding:.6rem .8rem;font-size:.78rem;color:var(--muted)">Click any row → the full voucher, source-bill scan &amp; edge cases.</div></div>
  </div>`;}
 
+/* ---------- double-entry journal view (traceability) ---------- */
+function journalFor(o){const a=+o.amt||0;const gst=Math.round(a*0.18/1.18),base=a-gst;const t=(o.type||'').toLowerCase();let L=[];
+ if(/receipt/.test(t))L=[['Bank / Cash A/C','Dr',a,o.dim||'—'],[o.party+' (Debtor)','Cr',a,'—']];
+ else if(/payment/.test(t))L=[[o.party+' (Creditor)','Dr',a,'—'],['Bank A/C','Cr',a,'—']];
+ else if(/credit note/.test(t))L=[['Sales Return A/C','Dr',base,'—'],['Output GST (reversed)','Dr',gst,'—'],[o.party+' (Debtor)','Cr',a,'—']];
+ else if(/debit note/.test(t))L=[[o.party+' (Creditor)','Dr',a,'—'],['Purchase Return A/C','Cr',base,'—'],['Input GST (reversed)','Cr',gst,'—']];
+ else if(/sales|invoice/.test(t))L=[[o.party+' (Debtor)','Dr',a,o.dim||'—'],['Sales / Contract revenue','Cr',base,'—'],['Output GST @ 18%','Cr',gst,'—']];
+ else if(/purchase|bill/.test(t))L=[[(o.head||'Purchases')+' A/C','Dr',base,o.dim||'—'],['Input GST @ 18%','Dr',gst,'—'],[o.party+' (Creditor)','Cr',a,'—']];
+ else L=[[(o.head||'Expense')+' A/C','Dr',a,o.dim||'—'],[(o.party||'Party')+' A/C','Cr',a,'—']];
+ return L;}
+function journalModal(o){const L=journalFor(o),IN=v=>'₹'+Math.round(v).toLocaleString('en-IN');const dr=L.filter(l=>l[1]==='Dr').reduce((s,l)=>s+l[2],0),cr=L.filter(l=>l[1]==='Cr').reduce((s,l)=>s+l[2],0);
+ return `<div class="mh"><h3>Accounting entry${o.v?' · '+o.v:''}</h3><div class="x" onclick="closeModal()">✕</div></div><div class="mb">
+  <p class="muted" style="font-size:.82rem;margin-top:0">The double-entry journal Numio posted automatically for this transaction. <b>Debits always equal credits</b> — nothing posts unless it balances.</p>
+  <div class="card" style="box-shadow:none"><div style="overflow-x:auto"><table style="min-width:420px"><thead><tr><th>Ledger account</th><th>Dimension</th><th class="tar">Debit</th><th class="tar">Credit</th></tr></thead><tbody>
+   ${L.map(l=>`<tr><td><b class="strong">${l[0]}</b></td><td class="faint">${l[3]}</td><td class="tar num">${l[1]==='Dr'?IN(l[2]):''}</td><td class="tar num" style="color:var(--green)">${l[1]==='Cr'?IN(l[2]):''}</td></tr>`).join("")}
+  </tbody></table></div></div>
+  <div class="ded tot" style="margin-top:.4rem"><span style="color:var(--green)">Balanced ✓</span><span class="num">Dr ${IN(dr)} = Cr ${IN(cr)}</span></div>
+  <div class="row" style="margin-top:.7rem;gap:.5rem"><button class="btn ghost sm" onclick="closeModal();go('transactions')">Day Book</button><button class="btn ghost sm" onclick="closeModal();go('ledger')">Ledger impact</button><button class="btn ghost sm" onclick="closeModal();go('audit')">Audit trail</button></div>
+  <p class="muted" style="font-size:.72rem;margin-top:.6rem">Source → transaction → <b>journal</b> → ledger → trial balance → financial statement. Every number is traceable back to here.</p></div>`;}
+function journalFromLastPost(){const p=postedRows()[0];if(!p)return journalModal({type:'journal',party:'—',amt:0});const v=p[1];let type=/^RCP/.test(v)?'receipt':/^PAY/.test(v)?'payment':/^CN/.test(v)?'credit note':/^DN/.test(v)?'debit note':/^INV/.test(v)?'sales':/^(BILL|PUR)/.test(v)?'purchase':'journal';return journalModal({v,type,party:p[2],amt:+String(p[5]).replace(/,/g,''),head:p[4],dim:p[3]});}
+function raJournalModal(){const g=1400400,r=Math.round(g*.05),ad=Math.round(g*.10),td=Math.round(g*.02),ce=Math.round(g*.01),gs=Math.round(g*.18),net=g-r-ad-td-ce+gs,IN=v=>'₹'+v.toLocaleString('en-IN');
+ const L=[['Aluva Textiles (Client) A/C','Dr',net],['Retention receivable','Dr',r],['Mobilization advance recovered','Dr',ad],['TDS receivable (194C)','Dr',td],['Labour cess receivable','Dr',ce],['Contract revenue','Cr',g],['Output GST @ 18% (works contract)','Cr',gs]];
+ const dr=L.filter(l=>l[1]==='Dr').reduce((s,l)=>s+l[2],0),cr=L.filter(l=>l[1]==='Cr').reduce((s,l)=>s+l[2],0);
+ return `<div class="mh"><h3>Accounting entry · RA-3 Aluva Bridge</h3><div class="x" onclick="closeModal()">✕</div></div><div class="mb">
+  <p class="muted" style="font-size:.82rem;margin-top:0">The full double-entry Numio posts when you certify the RA bill — every deduction lands in its own sub-ledger, and it balances.</p>
+  <div class="card" style="box-shadow:none"><div style="overflow-x:auto"><table style="min-width:420px"><thead><tr><th>Ledger account</th><th class="tar">Debit</th><th class="tar">Credit</th></tr></thead><tbody>
+   ${L.map(l=>`<tr><td><b class="strong">${l[0]}</b></td><td class="tar num">${l[1]==='Dr'?IN(l[2]):''}</td><td class="tar num" style="color:var(--green)">${l[1]==='Cr'?IN(l[2]):''}</td></tr>`).join("")}
+  </tbody></table></div></div>
+  <div class="ded tot" style="margin-top:.4rem"><span style="color:var(--green)">Balanced ✓</span><span class="num">Dr ${IN(dr)} = Cr ${IN(cr)}</span></div>
+  <p class="muted" style="font-size:.72rem;margin-top:.6rem">Retention → Retention register · Advance → mobilization ledger · TDS → 26Q · all from one certify. This is the depth MRI has, without the manual keying.</p></div>`;}
+/* ---------- exception center ---------- */
+function exceptionScreen(){const c=CL(),A=AC();const nz=s=>+String(s||0).replace(/,/g,'')||0;const items=[];
+ A.ageing.forEach(r=>{if(nz(r[5])>0)items.push(['critical','Overdue receivable',`${r[0]} — ₹${r[5]} outstanding over 90 days`,'ageing']);});
+ if(nz(A.gstK.miss2b))items.push(['critical','ITC at risk',`${A.gstK.miss2b} purchases missing in GSTR-2B · ${A.gstK.itc} input credit at risk`,'gst']);
+ c.ent.filter(e=>e[7]).forEach(e=>items.push(['warning','Budget overrun',`${e[0]} — ${e[3]}% of budget consumed (${e[1]})`,'sites']));
+ items.push(['warning','Unreconciled bank',`${UN().bank.review} bank statement lines not yet matched on ${UN().bank.name}`,'bankrec']);
+ c.purch.filter(p=>/Draft|Awaiting/.test(p[6])).forEach(p=>items.push(['review','Unapproved bill',`${p[1]} — ₹${p[4]} pending approval`,'approvals']));
+ if(nz(A.gstK.mismatch))items.push(['review','GST value mismatch',`${A.gstK.mismatch} invoices where books ≠ GSTN 2B value`,'gst']);
+ const missDoc=A.gstEx.find(x=>x[2]==='—');if(missDoc)items.push(['review','Missing document',`${missDoc[1]} — bill recorded but no source scan attached`,'purchases']);
+ const rk={critical:0,warning:1,review:2};items.sort((a,b)=>rk[a[0]]-rk[b[0]]);
+ const crit=items.filter(i=>i[0]==='critical').length,warn=items.filter(i=>i[0]==='warning').length,rev=items.filter(i=>i[0]==='review').length;
+ const pill=s=>s==='critical'?'p-red':s==='warning'?'p-amber':'p-blue';const ic=s=>s==='critical'?'🔴':s==='warning'?'🟠':'🟡';
+ return `<div class="row" style="align-items:center;margin-bottom:.3rem"><div><div class="sect" style="margin:0">Exception Center</div><div class="muted" style="font-size:.82rem">Everything wrong across the books, ranked — not another dashboard, the actual to-fix list</div></div><div style="margin-left:auto"><span class="aibadge"><span class="pulse"></span> AI scans the ledger continuously</span></div></div>
+ <div class="gt">${gtile("Critical",crit+"","p-red")}${gtile("Warnings",warn+"","p-amber")}${gtile("Review items",rev+"","p-blue")}${gtile("ITC at risk",A.gstK.itc,"p-gray")}</div>
+ <div class="card"><div style="overflow-x:auto"><table style="min-width:640px"><thead><tr><th>Severity</th><th>Type</th><th>Detail</th><th></th></tr></thead><tbody>
+  ${items.map(i=>`<tr><td><span class="pill ${pill(i[0])}">${ic(i[0])} ${i[0]}</span></td><td><b class="strong">${i[1]}</b></td><td class="faint">${i[2]}</td><td class="tar"><button class="btn ghost sm" data-nav="${i[3]}">Fix →</button></td></tr>`).join("")}
+ </tbody></table></div></div>
+ <p class="fn-note">The screen a finance head opens first — every exception ranked by severity, each drilling straight to where it's fixed. This is what turns "a lot of dashboards" into "I know exactly what needs me today".</p>`;}
+
 /* ---------- router ---------- */
-const TI={dashboard:["Overview","Dashboard"],ask:["Overview","Ask Numio"],whatsapp:["Overview","WhatsApp AI"],reports:["Overview","Reports"],reportcenter:["Overview","Report Center"],coa:["Accounting","Chart of Accounts"],ledger:["Accounting","Ledger"],voucher:["Accounting","New Voucher"],trialbal:["Accounting","Trial Balance"],transactions:["Accounting","Day Book"],gst:["Compliance","GSTR-2B Reconciliation"],ageing:["Compliance","Outstanding & Ageing"],audit:["Compliance","Audit Trail"],rabill:["Projects","RA Bill"],retention:["Projects","Retention register"],advance:["Projects","Mobilization & advances"],budget:["Projects","Budget vs Actual"],wip:["Projects","WIP / % completion"],subcon:["Projects","Subcontractors"],propsales:["Projects","Property Sales & Collections"],bankrec:["Accounting","Bank Reconciliation"],masters:["Accounting","Masters"],approvals:["Governance","Approvals"],batch:["Inventory","Batch & Expiry"],credit:["Transact","Credit Control"],sales:["Transact","Sales"],purchases:["Transact","Purchases"],allocation:["Transact","Cost Allocation"],costs:["Transact","Cost Analysis"],inventory:["Transact","Inventory"],sites:["Structure","Sites & Projects"],clients:["Structure","Firm console"],compare:["More","Compare"],flow:["More","Automation Flow"],settings:["More","Settings"],drill:["Detail","Transaction drill-down"],sitedetail:["Structure","Site detail"],promo:["Operations","Promotions & Schemes"],movers:["Operations","Fast / Slow Movers"],schedh:["Operations","Schedule H Register"],routeplan:["Operations","Route & Beat Plan"],salestarget:["Operations","Salesman Targets"],firmdash:["Firm","Firm Overview"],team:["Firm","Team & Access"],close:["Governance","Month-End Close & Review"]};
+const TI={dashboard:["Overview","Dashboard"],ask:["Overview","Ask Numio"],whatsapp:["Overview","WhatsApp AI"],reports:["Overview","Reports"],reportcenter:["Overview","Report Center"],coa:["Accounting","Chart of Accounts"],ledger:["Accounting","Ledger"],voucher:["Accounting","New Voucher"],trialbal:["Accounting","Trial Balance"],transactions:["Accounting","Day Book"],gst:["Compliance","GSTR-2B Reconciliation"],ageing:["Compliance","Outstanding & Ageing"],audit:["Compliance","Audit Trail"],rabill:["Projects","RA Bill"],retention:["Projects","Retention register"],advance:["Projects","Mobilization & advances"],budget:["Projects","Budget vs Actual"],wip:["Projects","WIP / % completion"],subcon:["Projects","Subcontractors"],propsales:["Projects","Property Sales & Collections"],bankrec:["Accounting","Bank Reconciliation"],masters:["Accounting","Masters"],approvals:["Governance","Approvals"],batch:["Inventory","Batch & Expiry"],credit:["Transact","Credit Control"],sales:["Transact","Sales"],purchases:["Transact","Purchases"],allocation:["Transact","Cost Allocation"],costs:["Transact","Cost Analysis"],inventory:["Transact","Inventory"],sites:["Structure","Sites & Projects"],clients:["Structure","Firm console"],compare:["More","Compare"],flow:["More","Automation Flow"],settings:["More","Settings"],drill:["Detail","Transaction drill-down"],sitedetail:["Structure","Site detail"],promo:["Operations","Promotions & Schemes"],movers:["Operations","Fast / Slow Movers"],schedh:["Operations","Schedule H Register"],routeplan:["Operations","Route & Beat Plan"],salestarget:["Operations","Salesman Targets"],firmdash:["Firm","Firm Overview"],team:["Firm","Team & Access"],close:["Governance","Month-End Close & Review"],exceptions:["Governance","Exception Center"]};
 function go(n){if(fTimer){clearInterval(fTimer);fTimer=null;}const ct=document.getElementById("content");ct.innerHTML=S[n]();if(TBCFG[n]){const h=ct.querySelector(".sect");const anchor=h?(h.closest(".row")||h):ct.firstElementChild;if(anchor)anchor.insertAdjacentHTML("afterend",toolbar(TBCFG[n]));}document.querySelectorAll(".nav").forEach(x=>x.classList.toggle("on",x.dataset.nav===n));document.getElementById("crumb").textContent=TI[n][0];document.getElementById("title").textContent=(n==="sites")?CL().structTitle:TI[n][1];paintIcons(document.getElementById("content"));if(n==="ask")aRenderChips();if(n==="firmdash")firmAskRender();if(n==="whatsapp"){waRenderActs();waRenderQ();}if(n==="transactions")txnRender();window.scrollTo(0,0);}
 
 /* ---------- actions ---------- */
@@ -1551,6 +1601,7 @@ const A={
  "rc-gen":(e)=>openModal(reportModal((e.dataset.r||"Report").replace(/ \((PDF|Excel)\)$/,""))),
  "rc-ml":()=>openModal(mlModal()),
  "rc-ask":()=>rcGen(),"report-manual":()=>openModal(manualReportModal()),
+ "ra-journal":()=>openModal(raJournalModal()),
  receipt:()=>openModal(receiptModal()),payment:()=>openModal(paymentModal()),
  "credit-note":()=>openModal(noteModal('credit')),"debit-note":()=>openModal(noteModal('debit')),
  "new-party":()=>openModal(partyModal()),"new-ledger":()=>openModal(ledgerNewModal()),"new-item":()=>openModal(itemModal()),

@@ -555,11 +555,11 @@ reports:()=>{const c=CL(),R=parseL(c.kpi[0][1]),Sp=parseL(c.kpi[3][1]),net=(R-Sp
  <p class="fn-note">Every figure drills → transaction → the attached bill. Reverse-drill shows the full split of any shared cost.</p>`;},
 
 sales:()=>{const c=CL(),ra=c.kind==="Construction";return `
- <div class="row" style="align-items:center;margin-bottom:1rem"><div class="sect" style="margin:0">Sales${ra?" & RA Bills":""}</div><div style="margin-left:auto"><button class="btn" data-action="new-ra">${svg("plus",15)} ${ra?"New RA Bill":"New invoice"}</button></div></div>
+ <div class="row" style="align-items:center;margin-bottom:1rem"><div class="sect" style="margin:0">Sales${ra?" & RA Bills":""}</div><div style="margin-left:auto;display:flex;gap:.5rem;flex-wrap:wrap"><button class="btn ghost" data-action="receipt">Record receipt</button><button class="btn ghost" data-action="credit-note">Credit note</button><button class="btn" data-action="new-ra">${svg("plus",15)} ${ra?"New RA Bill":"New invoice"}</button></div></div>
  <div class="card"><table><thead><tr><th>#</th><th>${c.dim.e} / Party</th><th>Type</th><th>Date</th><th class="tar">Amount</th><th>Status</th></tr></thead><tbody id="salesBody">${c.sales.map(rowA).join("")}</tbody></table></div>`;},
 
 purchases:()=>`
- <div class="row" style="align-items:center;margin-bottom:1rem"><div class="sect" style="margin:0">Purchases</div><div style="margin-left:auto"><button class="btn" data-action="newbill">${svg("plus",15)} New bill</button></div></div>
+ <div class="row" style="align-items:center;margin-bottom:1rem"><div class="sect" style="margin:0">Purchases</div><div style="margin-left:auto;display:flex;gap:.5rem;flex-wrap:wrap"><button class="btn ghost" data-action="payment">Record payment</button><button class="btn ghost" data-action="debit-note">Debit note</button><button class="btn" data-action="newbill">${svg("plus",15)} New bill</button></div></div>
  <div class="grid g2">
   <div class="card pad"><div class="ch" style="padding:0 0 .7rem;border:none"><h3>Bill capture</h3><span class="pill p-accent">OCR</span></div>
    <div class="upz" data-action="ocr" id="ocrZone">Drop a bill PDF / photo<br><span class="faint" style="font-size:.75rem">or tap to scan</span></div>
@@ -826,7 +826,15 @@ function setWaLang(l){WALANG=l;go("whatsapp");}
 /* ---------- modals ---------- */
 function newRA(){const c=CL(),ra=c.kind==="Construction";openModal(`<div class="mh"><h3>${ra?"New RA Bill":"New invoice"}</h3><div class="x" onclick="closeModal()">✕</div></div><div class="mb"><div class="fld"><label>${c.dim.e}</label><select id="raS">${c.ent.map(e=>`<option>${e[0]}</option>`).join("")}</select></div>${ra?`<div class="fld"><label>Work completed (%)</label><input id="raP" type="number" value="40"></div>`:``}<div class="fld"><label>Amount (₹)</label><input id="raA" type="number" value="50000"></div><button class="btn" style="width:100%;justify-content:center" onclick="subRA()">Create</button></div>`);}
 function subRA(){const c=CL(),s=document.getElementById("raS").value,a=(+document.getElementById("raA").value).toLocaleString('en-IN'),ra=c.kind==="Construction",pEl=document.getElementById("raP"),id=(ra?"RA-0":"INV-")+(200+Math.floor(Math.random()*99));c.sales.unshift([id,s,ra?("RA Bill · "+(pEl?pEl.value:40)+"%"):"Sales invoice","Today",a,"p-amber","Awaiting"]);closeModal();go("sales");toast((ra?"RA Bill ":"Invoice ")+id+" created");}
-function newClient(){openModal(`<div class="mh"><h3>Onboard client</h3><div class="x" onclick="closeModal()">✕</div></div><div class="mb"><div class="fld"><label>Company name</label><input placeholder="e.g. Metro Constructions"></div><div class="fld"><label>Industry pack</label><select><option>Construction</option><option>Pharmacy</option><option>Retail / Trading</option><option>Distribution</option></select></div><div class="fld"><label>Import opening books</label><select><option>Tally export</option><option>Excel</option><option>Zoho</option><option>Fresh start</option></select></div><button class="btn" style="width:100%;justify-content:center" onclick="closeModal();toast('Onboarding started — books importing')">Start onboarding</button></div>`);}
+function newClient(){openModal(`<div class="mh"><h3>Onboard a new client</h3><div class="x" onclick="closeModal()">✕</div></div><div class="mb" style="max-height:72vh;overflow:auto">
+ <div class="grid g2"><div class="fld"><label>Company name</label><input id="obN" placeholder="e.g. Metro Constructions"></div><div class="fld"><label>Industry pack</label><select id="obI"><option>Construction</option><option>Pharmacy</option><option>Retail / Trading</option><option>Distribution</option></select></div></div>
+ <div class="grid g2"><div class="fld"><label>GSTIN</label><input id="obG" placeholder="32ABCDE1234F1Z5"></div><div class="fld"><label>Import books from</label><select id="obImp"><option>Tally export</option><option>Zoho</option><option>Excel</option><option>Fresh start</option></select></div></div>
+ <div style="font-weight:700;font-size:.84rem;margin:.8rem 0 .3rem">Opening balances <span class="faint" style="font-weight:500">— as on 1 Apr 2026</span></div>
+ <div class="grid g2"><div class="fld"><label>Cash &amp; bank (₹)</label><input id="obCash" type="number" value="0"></div><div class="fld"><label>Debtors — owed to you (₹)</label><input id="obDeb" type="number" value="0"></div></div>
+ <div class="grid g2"><div class="fld"><label>Creditors — you owe (₹)</label><input id="obCred" type="number" value="0"></div><div class="fld"><label>Stock-in-hand (₹)</label><input id="obStock" type="number" value="0"></div></div>
+ <button class="btn" style="width:100%;justify-content:center;margin-top:.3rem" onclick="subOnboard()">Start onboarding</button>
+ <p class="muted" style="font-size:.73rem;margin-top:.6rem">Numio imports the Tally/Zoho export and posts these opening balances as the first entry — the books start balanced from day one.</p></div>`);}
+function subOnboard(){const n=val('obN')||"New client",imp=val('obImp');closeModal();toast("Onboarding '"+n+"' — "+imp+" importing · opening balances posted");}
 function ocr(){const c=CL();document.getElementById("ocrZone").innerHTML="Reading bill…";setTimeout(()=>{document.getElementById("ocrZone").innerHTML="Bill read ✓";document.getElementById("ocrRes").innerHTML=`<div style="margin-top:.9rem;padding:.8rem;border:1px solid var(--accent);background:var(--accent-bg);border-radius:11px"><div style="font-size:.7rem;font-weight:700;color:var(--accent);font-family:'IBM Plex Mono',monospace">SUGGESTED ENTRY</div><div style="margin-top:.4rem;font-size:.84rem"><b>${c.bill.v}</b> · ${c.bill.it} · <b>₹${c.bill.amt.toLocaleString('en-IN')}</b><br><span class="muted">to ${c.bill.head}</span></div><div style="margin-top:.4rem;font-size:.78rem" class="muted">Suggests: split across ${c.ent.length} ${c.dim.e.toLowerCase()}s →</div><div class="row" style="margin-top:.6rem;gap:.5rem"><button class="btn sm" data-nav="allocation">Review split</button><button class="btn ghost sm" data-action="ocr-approve">Approve &amp; post</button></div></div>`;paintIcons(document.getElementById("ocrRes"));toast("OCR done — entry drafted");},850);}
 
 /* ---------- inventory sub + malayalam report ---------- */
@@ -895,7 +903,7 @@ function gstScreen(){
 function coaScreen(){const c=CL();
  const g=AC().coa;
  return `
- <div class="row" style="align-items:center;margin-bottom:.3rem"><div class="sect" style="margin:0">Chart of Accounts</div><div style="margin-left:auto"><span class="aibadge">✦ AI codes every posting to ${c.dim.e} · ${c.dim.s} · Cost-head</span></div></div>
+ <div class="row" style="align-items:center;margin-bottom:.3rem"><div class="sect" style="margin:0">Chart of Accounts</div><div style="margin-left:auto;display:flex;gap:.5rem;align-items:center"><button class="btn ghost sm" data-action="new-ledger">${svg("plus",14)} New ledger</button><span class="aibadge">✦ AI codes every posting to ${c.dim.e} · ${c.dim.s} · Cost-head</span></div></div>
  <p class="muted" style="margin-top:0;font-size:.85rem">Standard Indian group structure. Click any ledger → its statement → drill to vouchers.</p>
  <div class="card pad"><div class="tree-acc">${g.map(x=>`<div><div class="grp"><span>▸ ${x[0]}</span><span class="num faint" style="font-weight:500">${x[1].length} ledgers</span></div>${x[1].map(l=>`<div class="led" data-action="open-ledger" data-l="${l[0]}"><span>${l[0]}</span><span class="num">₹${l[1]} <span class="faint" style="font-size:.7rem">${l[2]}</span></span></div>`).join("")}</div>`).join("")}</div></div>`;}
 
@@ -1051,7 +1059,7 @@ function bankrec(){const B=UN().bank;const rows=B.rows;
 
 function masters(){
  return `<div class="row" style="align-items:center;margin-bottom:.3rem"><div class="sect" style="margin:0">Masters</div><div style="margin-left:auto"><span class="aibadge">✦ GSTIN auto-validated from the portal</span></div></div>
- <div class="row" style="gap:.35rem;margin-bottom:.9rem"><button class="btn on sm">Parties</button><button class="btn ghost sm">Items</button><button class="btn ghost sm" data-action="onboard">+ New party</button></div>
+ <div class="row" style="gap:.35rem;margin-bottom:.9rem"><button class="btn on sm">Parties</button><button class="btn ghost sm">Items</button><button class="btn ghost sm" data-action="new-party">+ New party</button><button class="btn ghost sm" data-action="new-item">+ New item</button></div>
  <div class="card"><div style="overflow-x:auto"><table style="min-width:960px"><thead><tr><th>Party</th><th>GSTIN</th><th>PAN</th><th>State / PoS</th><th class="tar">Credit period</th><th class="tar">Credit limit</th><th class="tar">Opening bal</th><th>TDS</th></tr></thead><tbody>
   ${UN().masters.map(r=>`<tr><td><b class="strong">${r[0]}</b></td><td class="mono faint" style="font-size:.75rem">${r[1]}</td><td class="mono faint">${r[2]}</td><td class="faint">${r[3]}</td><td class="tar faint">${r[4]}</td><td class="tar num">${r[5]==='—'?'—':'₹'+r[5]}</td><td class="tar num">${r[6]}</td><td><span class="pill p-gray">${r[7]}</span></td></tr>`).join("")}
  </tbody></table></div></div>
@@ -1210,6 +1218,58 @@ function manualReportModal(){const c=CL();return `<div class="mh"><h3>Build a re
  <button class="btn" style="width:100%;justify-content:center;margin-top:.3rem" onclick="manualGen()">Generate report</button>
  <p class="muted" style="font-size:.73rem;margin-top:.6rem">This is the manual path — you choose everything. The "ask in English" box just does this same thing from one sentence.</p></div>`;}
 function manualGen(){const t=val('mrT'),s=val('mrS'),f=val('mrFmt');closeModal();toast("Generated: "+t+" · "+s+" · "+f);openModal(reportModal(t));}
+/* ---- receipts · payments · notes · masters · onboarding (real create flows) ---- */
+function nNo(pre){return pre+"-0"+(41+POSTED.filter(x=>x.cid===CID&&x.v&&x.v.startsWith(pre)).length);}
+function receiptModal(){const c=CL();const custs=[...new Set(AC().ageing.map(r=>r[0]))];const invs=c.sales.map(s=>s[0]+" · "+s[1]+" · ₹"+s[4]);
+ return `<div class="mh"><h3>Record a receipt — money in</h3><div class="x" onclick="closeModal()">✕</div></div><div class="mb">
+ <p class="muted" style="font-size:.82rem;margin-top:0">Record a payment received from a customer and apply it to their invoice.</p>
+ <div class="fld"><label>From (customer)</label><select id="rcpP">${custs.map(p=>`<option>${p}</option>`).join("")}</select></div>
+ <div class="fld"><label>Against invoice</label><select id="rcpI"><option>Oldest outstanding (auto-applied)</option>${invs.map(i=>`<option>${i}</option>`).join("")}</select></div>
+ <div class="grid g2"><div class="fld"><label>Amount (₹)</label><input id="rcpA" type="number" value="85000"></div><div class="fld"><label>Received in</label><select id="rcpM"><option>Bank (NEFT)</option><option>UPI</option><option>Cash</option><option>Cheque</option></select></div></div>
+ <div class="grid g2"><div class="fld"><label>Date</label><input id="rcpD" type="date" value="2026-08-24"></div><div class="fld"><label>TDS deducted by client (₹)</label><input id="rcpT" type="number" value="0"></div></div>
+ <button class="btn" style="width:100%;justify-content:center;margin-top:.3rem" onclick="subReceipt()">Post receipt</button></div>`;}
+function subReceipt(){const p=val('rcpP'),a=+val('rcpA')||0,m=val('rcpM'),t=+val('rcpT')||0,v=nNo('RCP');POSTED.unshift({cid:CID,kind:'voucher',date:"Today",v,party:p,dim:m,head:"Receipt",amt:a,drcr:'Cr'});AUDITLOG.unshift({cid:CID,row:[v+" · Receipt from "+p,"Created","Al Ameen","Just now","—","₹"+a.toLocaleString('en-IN')+" via "+m]});closeModal();toast("Receipt "+v+" posted");openModal(postedModal(v,"Receipt",p+" · ₹"+a.toLocaleString('en-IN')+" via "+m+(t?" · TDS ₹"+t.toLocaleString('en-IN'):"")+" — applied to oldest invoice, ledger updated"));}
+function paymentModal(){const c=CL();const sups=[...new Set(c.purch.map(x=>x[1]).concat([c.payee[0],c.bill.v]))];const bills=c.purch.map(b=>b[0]+" · "+b[1]+" · ₹"+b[4]);
+ return `<div class="mh"><h3>Make a payment — money out</h3><div class="x" onclick="closeModal()">✕</div></div><div class="mb">
+ <p class="muted" style="font-size:.82rem;margin-top:0">Pay a supplier or expense. Prepared payments need a partner PIN to release — maker-checker.</p>
+ <div class="fld"><label>Pay to (supplier)</label><select id="payP">${sups.map(p=>`<option>${p}</option>`).join("")}</select></div>
+ <div class="fld"><label>Against bill</label><select id="payB"><option>Oldest outstanding (auto)</option>${bills.map(b=>`<option>${b}</option>`).join("")}</select></div>
+ <div class="grid g2"><div class="fld"><label>Amount (₹)</label><input id="payA" type="number" value="180000"></div><div class="fld"><label>Pay from</label><select id="payM"><option>HDFC ****6411</option><option>SBI ****7745</option><option>Cash</option></select></div></div>
+ <div class="grid g2"><div class="fld"><label>Date</label><input id="payD" type="date" value="2026-08-24"></div><div class="fld"><label>TDS 194C to deduct (₹)</label><input id="payT" type="number" value="0"></div></div>
+ <button class="btn" style="width:100%;justify-content:center;margin-top:.3rem" onclick="subPayment()">Prepare payment</button></div>`;}
+function subPayment(){const p=val('payP'),a=+val('payA')||0,m=val('payM'),v=nNo('PAY');POSTED.unshift({cid:CID,kind:'voucher',date:"Today",v,party:p,dim:m,head:"Payment",amt:a,drcr:'Dr'});AUDITLOG.unshift({cid:CID,row:[v+" · Payment to "+p,"Created","Al Ameen","Just now","—","₹"+a.toLocaleString('en-IN')+" from "+m]});closeModal();toast("Payment "+v+" prepared");openModal(postedModal(v,"Payment (prepared)",`${p} · ₹${a.toLocaleString('en-IN')} from ${m} — 🔒 needs partner PIN to release`));}
+function noteModal(kind){const c=CL();const isC=kind==='credit';const parties=isC?[...new Set(AC().ageing.map(r=>r[0]))]:[...new Set(c.purch.map(x=>x[1]))];const docs=isC?c.sales.map(s=>s[0]+" · "+s[1]):c.purch.map(b=>b[0]+" · "+b[1]);
+ return `<div class="mh"><h3>${isC?'Credit note — sales return':'Debit note — purchase return'}</h3><div class="x" onclick="closeModal()">✕</div></div><div class="mb">
+ <p class="muted" style="font-size:.82rem;margin-top:0">${isC?'Reduce what a customer owes you — a return or rate cut, with GST reversed.':'Reduce what you owe a supplier — a return or rate cut, with GST reversed.'}</p>
+ <div class="fld"><label>${isC?'Customer':'Supplier'}</label><select id="ntP">${parties.map(p=>`<option>${p}</option>`).join("")}</select></div>
+ <div class="fld"><label>Against ${isC?'invoice':'bill'}</label><select id="ntD">${docs.map(d=>`<option>${d}</option>`).join("")}</select></div>
+ <div class="grid g2"><div class="fld"><label>Amount (₹)</label><input id="ntA" type="number" value="20000"></div><div class="fld"><label>Reason</label><select id="ntR"><option>Goods returned</option><option>Rate difference</option><option>Damaged goods</option><option>Post-sale discount</option></select></div></div>
+ <div class="fld"><label>GST to reverse (₹)</label><input id="ntG" type="number" value="3600"></div>
+ <button class="btn" style="width:100%;justify-content:center;margin-top:.3rem" onclick="subNote('${kind}')">Post ${isC?'credit':'debit'} note</button></div>`;}
+function subNote(kind){const isC=kind==='credit',p=val('ntP'),a=+val('ntA')||0,r=val('ntR'),v=nNo(isC?'CN':'DN');POSTED.unshift({cid:CID,kind:'voucher',date:"Today",v,party:p,dim:r,head:isC?"Credit Note":"Debit Note",amt:a,drcr:isC?'Dr':'Cr'});AUDITLOG.unshift({cid:CID,row:[v+" · "+(isC?"Credit":"Debit")+" note · "+p,"Created","Al Ameen","Just now","—","₹"+a.toLocaleString('en-IN')+" · "+r]});closeModal();toast((isC?"Credit":"Debit")+" note "+v+" posted");openModal(postedModal(v,(isC?"Credit":"Debit")+" note",`${p} · ₹${a.toLocaleString('en-IN')} · ${r} · GST reversed`));}
+function partyModal(){return `<div class="mh"><h3>New party — customer or supplier</h3><div class="x" onclick="closeModal()">✕</div></div><div class="mb">
+ <div class="fld"><label>Name</label><input id="ptN" placeholder="e.g. Royal Constructions"></div>
+ <div class="grid g2"><div class="fld"><label>Type</label><select id="ptT"><option>Customer</option><option>Supplier</option><option>Both</option></select></div><div class="fld"><label>State / place of supply</label><input id="ptS" value="Kerala (32)"></div></div>
+ <div class="grid g2"><div class="fld"><label>GSTIN</label><input id="ptG" placeholder="32ABCDE1234F1Z5"></div><div class="fld"><label>PAN</label><input id="ptPan" placeholder="ABCDE1234F"></div></div>
+ <div class="grid g2"><div class="fld"><label>Credit period (days)</label><input id="ptCp" type="number" value="30"></div><div class="fld"><label>Credit limit (₹)</label><input id="ptCl" type="number" value="500000"></div></div>
+ <div class="grid g2"><div class="fld"><label>Opening balance (₹)</label><input id="ptOb" type="number" value="0"></div><div class="fld"><label>TDS section</label><input id="ptTds" value="194Q"></div></div>
+ <button class="btn" style="width:100%;justify-content:center;margin-top:.3rem" onclick="subParty()">✦ Validate GSTIN &amp; save</button>
+ <p class="muted" style="font-size:.73rem;margin-top:.6rem">Numio auto-validates the GSTIN against the portal and fills the rest — you type the minimum.</p></div>`;}
+function subParty(){const n=val('ptN')||"New Party",g=val('ptG')||"32XXXXX0000X1Z0",pan=val('ptPan')||"XXXXX0000X",st=val('ptS'),cp=val('ptCp'),cl=+val('ptCl')||0,ob=+val('ptOb')||0,tds=val('ptTds');UN().masters.unshift([n,g+" ✓",pan,st,cp+" d",cl.toLocaleString('en-IN'),ob?ob.toLocaleString('en-IN')+" Dr":"—",tds]);AUDITLOG.unshift({cid:CID,row:["Party: "+n,"Created","Al Ameen","Just now","—",g+" ✓"]});closeModal();toast("Party '"+n+"' created — GSTIN validated");go('masters');}
+function ledgerNewModal(){const groups=AC().coa.map(g=>g[0]);return `<div class="mh"><h3>New ledger / account</h3><div class="x" onclick="closeModal()">✕</div></div><div class="mb">
+ <p class="muted" style="font-size:.82rem;margin-top:0">Add a new account head to the Chart of Accounts.</p>
+ <div class="fld"><label>Ledger name</label><input id="lgN" placeholder="e.g. Diesel &amp; fuel"></div>
+ <div class="fld"><label>Under group</label><select id="lgG">${groups.map(g=>`<option>${g}</option>`).join("")}</select></div>
+ <div class="grid g2"><div class="fld"><label>Opening balance (₹)</label><input id="lgO" type="number" value="0"></div><div class="fld"><label>Nature</label><select id="lgD"><option>Dr</option><option>Cr</option></select></div></div>
+ <button class="btn" style="width:100%;justify-content:center;margin-top:.3rem" onclick="subLedgerNew()">Create ledger</button></div>`;}
+function subLedgerNew(){const n=val('lgN')||"New Ledger",grp=val('lgG'),o=+val('lgO')||0,d=val('lgD');const g=AC().coa.find(x=>x[0]===grp);if(g)g[1].unshift([n,o.toLocaleString('en-IN'),d]);AUDITLOG.unshift({cid:CID,row:["Ledger: "+n,"Created","Al Ameen","Just now","—",grp+" · "+d]});closeModal();toast("Ledger '"+n+"' created under "+grp);go('coa');}
+function itemModal(){const c=CL();return `<div class="mh"><h3>New item / product</h3><div class="x" onclick="closeModal()">✕</div></div><div class="mb">
+ <div class="fld"><label>Item name</label><input id="itN" placeholder="e.g. Cement OPC 53"></div>
+ <div class="grid g2"><div class="fld"><label>HSN code</label><input id="itH" placeholder="2523"></div><div class="fld"><label>Unit</label><input id="itU" value="Nos"></div></div>
+ <div class="grid g2"><div class="fld"><label>Rate (₹)</label><input id="itR" type="number" value="0"></div><div class="fld"><label>GST %</label><select id="itG"><option>18</option><option>12</option><option>28</option><option>5</option><option>0</option></select></div></div>
+ <div class="grid g2"><div class="fld"><label>Opening stock</label><input id="itS" type="number" value="0"></div><div class="fld"><label>Reorder level</label><input id="itRo" type="number" value="0"></div></div>
+ <button class="btn" style="width:100%;justify-content:center;margin-top:.3rem" onclick="subItem()">Create item</button></div>`;}
+function subItem(){const c=CL(),n=val('itN')||"New Item",oh=+val('itS')||0,ro=+val('itRo')||0,rate=+val('itR')||0,vv=oh*rate,stat=oh<=ro?"Low":"OK";c.inv.unshift([n,c.ent[0][0],oh+"",ro+"",vv.toLocaleString('en-IN'),stat]);AUDITLOG.unshift({cid:CID,row:["Item: "+n,"Created","Al Ameen","Just now","—","HSN "+(val('itH')||'—')+" · GST "+(val('itG')||'')+"%"]});closeModal();toast("Item '"+n+"' created");setInv&&setInv('stock');go('inventory');}
 function reportModal(name){const c=CL();return `<div class="mh"><h3>${name}</h3><div class="x" onclick="closeModal()">✕</div></div><div class="mb"><div class="pill p-accent" style="margin-bottom:.6rem">✦ Generated instantly · ${c.nm} · Aug 2026</div><div class="card pad" style="max-height:320px;overflow:auto">${genReport(name)}</div><div class="row" style="gap:.5rem;margin-top:.85rem;flex-wrap:wrap"><button class="btn" onclick="toast('Downloaded — ${name} (PDF)')">⬇ Download PDF</button><button class="btn ghost" onclick="toast('Sent on WhatsApp to the owner')">Share on WhatsApp</button><button class="btn ghost" onclick="closeModal();openModal(mlModal())">🌐 മലയാളം</button></div></div>`;}
 function fileModal(ret){const c=CL(),out=(parseL(c.kpi[0][1])*0.18).toFixed(2),itc=(parseL(c.kpi[3][1])*0.12).toFixed(2),net=(parseL(c.kpi[0][1])*0.09).toFixed(2);
  return `<div class="mh"><h3>File ${ret} · Aug 2026</h3><div class="x" onclick="closeModal()">✕</div></div><div class="mb" id="fileBody">
@@ -1482,6 +1542,9 @@ const A={
  "rc-gen":(e)=>openModal(reportModal((e.dataset.r||"Report").replace(/ \((PDF|Excel)\)$/,""))),
  "rc-ml":()=>openModal(mlModal()),
  "rc-ask":()=>rcGen(),"report-manual":()=>openModal(manualReportModal()),
+ receipt:()=>openModal(receiptModal()),payment:()=>openModal(paymentModal()),
+ "credit-note":()=>openModal(noteModal('credit')),"debit-note":()=>openModal(noteModal('debit')),
+ "new-party":()=>openModal(partyModal()),"new-ledger":()=>openModal(ledgerNewModal()),"new-item":()=>openModal(itemModal()),
  "rc-schedule":()=>toast("Report pack scheduled"),
  "ret-release":(e)=>toast("Retention released: "+(e.dataset.p||'')),
  "appr-ok":()=>toast("Approved — posted & logged to the audit trail"),
